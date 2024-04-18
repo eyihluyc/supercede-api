@@ -13,7 +13,9 @@ spec = withApp $ do
         it "gives a 200" $ do
 
             let quoteName = "quote1" :: Text
-                body = object [ "name" .= quoteName ]
+                layer_id = "1"
+                body = object [ "name" .= quoteName
+                              , "layer_id" .= layer_id ]
                 encoded = encode body
 
             request $ do
@@ -29,7 +31,7 @@ spec = withApp $ do
                 case quotes of
                     [ent] -> pure ent
                     _ -> error "needed 1 entity"
-            assertEq "Should have " quote (Quote quoteName)
+            assertEq "Should have " quote (Quote quoteName layer_id)
 
     describe "invalid requests" $ do
         it "400s when the JSON body is invalid" $ do
@@ -50,7 +52,8 @@ spec = withApp $ do
             let rowsBefore = length quotesBefore
 
             let quoteName = "quote1" :: Text
-                body = object [ "name" .= quoteName ]
+                body = object [ "name" .= quoteName
+                              , "layer_id" .= ("1" :: Text)]
                 encoded = encode body
 
             request $ do
@@ -68,7 +71,11 @@ spec = withApp $ do
         it "returns the same number of quotes as in the database" $ do
             quotesInDB <- runDB $ count ([] :: [Filter Quote])
 
-            get QuoteR
+            request $ do
+                setMethod "GET"
+                setUrl QuoteR
+                addGetParam "layer_id" "1"
+                addRequestHeader ("Content-Type", "application/json")
             statusIs 200
 
             responseMaybe <- getResponse
