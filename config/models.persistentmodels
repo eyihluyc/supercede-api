@@ -1,8 +1,28 @@
 -- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
+Money json
+    amount Double
+    currency Text
+    deriving Eq
+    deriving Show
 Quote json
     name Text
     layer_id Text
+    stamp_name Text
+    line_size Double Maybe
+    rate_on_line Double Maybe
+    premium Money Maybe
+    rate_on_premium Double Maybe
+    ceding_commission Double Maybe
+    expiry_date Day Maybe
+    reference Text Maybe
+    comment String Maybe
+    reinsurer Text Maybe
+    rate Double Maybe
+    authorizing_entity Double Maybe
+    reinsurance_premium Money Maybe
+    underwriter_reference Text Maybe
+    expiry Day Maybe
     deriving Eq
     deriving Show

@@ -9,13 +9,43 @@ import Network.Wai.Test (simpleBody)
 spec :: Spec
 spec = withApp $ do
 
-    describe "valid request" $ do
+    let quoteName = "my quote name"
+        layer_id = "1"
+        stamp_name = "my stamp name"
+        body = object [ "name" .= quoteName
+                        , "layer_id" .= layer_id 
+                        , "stamp_name" .= stamp_name]
+        encoded = encode body
+
+    describe "valid POST request" $ do
         it "gives a 200" $ do
 
-            let quoteName = "quote1" :: Text
-                layer_id = "1"
+            request $ do
+                setMethod "POST"
+                setUrl QuoteR
+                setRequestBody encoded
+                addRequestHeader ("Content-Type", "application/json")
+                addRequestHeader ("Supercede-Version", "2020-10-01")
+            statusIs 201
+
+            quotes <- runDB $ selectList [QuoteName ==. quoteName] []
+            Entity _id quote <-
+                case quotes of
+                    [ent] -> pure ent
+                    _ -> error "needed 1 entity"
+            assertEq "Should have " quote (Quote quoteName layer_id stamp_name Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+    
+    describe "valid POST request with \"reinsurance_premium\" field" $ do
+        it "gives a 200" $ do
+
+            let quoteName = "my quote name 2"
+                layer_id = "2"
+                stamp_name = "my stamp name 2"
+                reinsurance_premium = Money 200 "USD"
                 body = object [ "name" .= quoteName
-                              , "layer_id" .= layer_id ]
+                                , "layer_id" .= layer_id 
+                                , "stamp_name" .= stamp_name
+                                , "reinsurance_premium" .= reinsurance_premium]
                 encoded = encode body
 
             request $ do
@@ -31,7 +61,7 @@ spec = withApp $ do
                 case quotes of
                     [ent] -> pure ent
                     _ -> error "needed 1 entity"
-            assertEq "Should have " quote (Quote quoteName layer_id)
+            assertEq "Should have " quote (Quote quoteName layer_id stamp_name Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (Just reinsurance_premium) Nothing Nothing)
 
     describe "invalid requests" $ do
         it "400s when the JSON body is invalid" $ do
@@ -50,11 +80,6 @@ spec = withApp $ do
         it "gets a row after a valid POST request" $ do
             quotesBefore <- runDB $ selectList ([] :: [Filter Quote]) []
             let rowsBefore = length quotesBefore
-
-            let quoteName = "quote1" :: Text
-                body = object [ "name" .= quoteName
-                              , "layer_id" .= ("1" :: Text)]
-                encoded = encode body
 
             request $ do
                 setMethod "POST"
