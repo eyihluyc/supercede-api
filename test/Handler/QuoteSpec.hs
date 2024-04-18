@@ -13,9 +13,12 @@ spec = withApp $ do
         layer_id = "1"
         stamp_name = "my stamp name"
         body = object [ "name" .= quoteName
-                        , "layer_id" .= layer_id 
+                        , "layer_id" .= layer_id
                         , "stamp_name" .= stamp_name]
         encoded = encode body
+
+    let versionErrorMsg = encode $ object [ ("error", "Invalid or missing Supercede-Version header") 
+                                          , "available_versions" .= ["2019-12-01" :: Text, "2020-10-01" :: Text]]
 
     describe "valid POST request" $ do
         it "gives a 200" $ do
@@ -34,7 +37,7 @@ spec = withApp $ do
                     [ent] -> pure ent
                     _ -> error "needed 1 entity"
             assertEq "Should have " quote (Quote quoteName layer_id stamp_name Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
-    
+
     describe "valid POST request with \"reinsurance_premium\" field" $ do
         it "gives a 200" $ do
 
@@ -43,9 +46,9 @@ spec = withApp $ do
                 stamp_name = "my stamp name 2"
                 reinsurance_premium = Money 200 "USD"
                 body = object [ "name" .= quoteName
-                                , "layer_id" .= layer_id 
-                                , "stamp_name" .= stamp_name
-                                , "reinsurance_premium" .= reinsurance_premium]
+                              , "layer_id" .= layer_id
+                              , "stamp_name" .= stamp_name
+                              , "reinsurance_premium" .= reinsurance_premium]
                 encoded = encode body
 
             request $ do
@@ -113,4 +116,33 @@ spec = withApp $ do
                     case quotesInResponse of
                         Just quotes' -> assertEq "Number of quotes in response matches database" quotesInDB (length quotes')
                         Nothing      -> error "Failed to decode response body"
+                Nothing -> error "No response received"
+
+        it "returns an error response if Supercede-Version is not provided" $ do
+            request $ do
+                setMethod "GET"
+                setUrl QuoteR
+                addGetParam "layer_id" "1"
+                addRequestHeader ("Content-Type", "application/json")
+            statusIs 400
+
+            responseMaybe <- getResponse
+            case responseMaybe of
+                Just response -> do
+                    assertEq "Should send available versions" versionErrorMsg (simpleBody response)
+                Nothing -> error "No response received"
+        
+        it "returns an error response if the provided Supercede-Version is not supported" $ do
+            request $ do
+                setMethod "GET"
+                setUrl QuoteR
+                addGetParam "layer_id" "1"
+                addRequestHeader ("Content-Type", "application/json")
+                addRequestHeader ("Supercede-Version", "2024-04-18")
+            statusIs 400
+
+            responseMaybe <- getResponse
+            case responseMaybe of
+                Just response -> do
+                    assertEq "Should send available versions" versionErrorMsg (simpleBody response)
                 Nothing -> error "No response received"
