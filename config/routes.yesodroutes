@@ -3,4 +3,4 @@
 
 /static StaticR Static appStatic
 
-/api/quote QuoteR GET POST
+/api/quotes QuoteR GET POST
