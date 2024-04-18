@@ -23,8 +23,8 @@ spec = withApp $ do
                 setUrl QuoteR
                 setRequestBody encoded
                 addRequestHeader ("Content-Type", "application/json")
-
-            statusIs 200
+                addRequestHeader ("Supercede-Version", "2020-10-01")
+            statusIs 201
 
             quotes <- runDB $ selectList [QuoteName ==. quoteName] []
             Entity _id quote <-
@@ -43,7 +43,7 @@ spec = withApp $ do
                 setUrl QuoteR
                 setRequestBody $ encode body
                 addRequestHeader ("Content-Type", "application/json")
-
+                addRequestHeader ("Supercede-Version", "2020-10-01")
             statusIs 400
 
     describe "quotes table" $ do
@@ -61,6 +61,8 @@ spec = withApp $ do
                 setUrl QuoteR
                 setRequestBody encoded
                 addRequestHeader ("Content-Type", "application/json")
+                addRequestHeader ("Supercede-Version", "2020-10-01")
+            statusIs 201
 
             quotesAfter <- runDB $ selectList ([] :: [Filter Quote]) []
             let rowsAfter = length quotesAfter
@@ -76,6 +78,7 @@ spec = withApp $ do
                 setUrl QuoteR
                 addGetParam "layer_id" "1"
                 addRequestHeader ("Content-Type", "application/json")
+                addRequestHeader ("Supercede-Version", "2020-10-01")
             statusIs 200
 
             responseMaybe <- getResponse
